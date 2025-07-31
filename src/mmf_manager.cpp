@@ -86,7 +86,7 @@ int main() {
                 pSharedData->minerals[map_idx][i].type = (rand() % 10 < 6) ? COAL : (MineralType)(rand() % 3);
             } else if (map_id == 0) { // 중앙 맵 - 균등 분포
                 pSharedData->minerals[map_idx][i].type = (MineralType)(rand() % 3);
-            } else { // 우측 맵 - 금이 많음
+            } else if (map_id==1) { // 우측 맵 - 금이 많음
                 pSharedData->minerals[map_idx][i].type = (rand() % 10 < 4) ? GOLD : (MineralType)(rand() % 3);
             }
 
