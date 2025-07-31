@@ -1,6 +1,12 @@
 #pragma once
 #include <iostream>
 #include <windows.h>
+#include "header.h"
+#include "item.h"
+
+// AI 전용 플레이어 ID (예: 3번 슬롯)
+#define AI_PLAYER_ID 3
+
 
 struct Position{
     int x;
@@ -54,3 +60,10 @@ void draw_object(const Position& pos, const Object& obj);
 void draw_player(const Player& player);
 void decreaseLife(Player& p, int amount = 1);
 bool isNearMineral(Position& p, Mineral& mineral);
+
+
+// AI 업데이트 함수 선언
+void updateAI(struct SharedData* data);
+
+// GOLD를 찾는 함수 선언
+struct Mineral* findNearestGold(struct SharedData* data, int mapId, int x, int y);
