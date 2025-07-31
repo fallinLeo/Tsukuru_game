@@ -24,6 +24,7 @@ struct PlayerData {
     const char* symbol;
     bool is_active;
     int current_map_id; // 플레이어가 현재 있는 맵
+    int life;
 };
 
 struct SharedData {
