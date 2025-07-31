@@ -7,6 +7,31 @@
 #include "header/character.h"
 #include "header/item.h"
 
+// 방향, 현재 맵 id, 현재 위치를 받아 다음 맵 id와 위치를 반환
+bool try_map_transition(Direction dir, int& map_id, Position& pos) {
+    MapData* current_map = maps[get_map_index_by_id(map_id)];
+    auto it = current_map->neighbor_map_ids.find(dir);
+    if (it == current_map->neighbor_map_ids.end()) return false;
+
+    int next_map_id = it->second;
+    switch (dir) {
+        case Direction::LEFT:
+            pos.x = WIDTH - 2;
+            break;
+        case Direction::RIGHT:
+            pos.x = 1;
+            break;
+        case Direction::UP:
+            pos.y = HEIGHT - 2;
+            break;
+        case Direction::DOWN:
+            pos.y = 1;
+            break;
+    }
+    map_id = next_map_id;
+    return true;
+}
+
 int main() {
     
     HANDLE hMapFile = OpenFileMappingA(
@@ -109,43 +134,36 @@ int main() {
             Position next_pos = current_pos;
             bool map_transition = false;
             int new_map_id = pSharedData->players[player_id].current_map_id;
+            Direction dir;
 
             switch (ch) {
-                case 72: next_pos.y--; break; // Up
-                case 80: next_pos.y++; break; // Down
+                case 72: // Up
+                    next_pos.y--;
+                    if (next_pos.y <= 0)
+                        map_transition = try_map_transition(Direction::UP, new_map_id, next_pos);
+                    break;
+                case 80: // Down
+                    next_pos.y++;
+                    if (next_pos.y >= HEIGHT - 1)
+                        map_transition = try_map_transition(Direction::DOWN, new_map_id, next_pos);
+                    break;
                 case 75: // Left
                     next_pos.x--;
-                    // 좌측 경계를 넘어가면 맵 전환
-                    if (next_pos.x <= 1) {
-                        if (pSharedData->players[player_id].current_map_id > -1) {
-                            new_map_id = pSharedData->players[player_id].current_map_id - 1;
-                            next_pos.x = WIDTH - 2; // 새 맵의 우측 끝으로
-                            map_transition = true;
-                        } else {
-                            next_pos.x = 0; // 더 이상 갈 수 없음
-                        }
-                    }
+                    if (next_pos.x <= 0)
+                        map_transition = try_map_transition(Direction::LEFT, new_map_id, next_pos);
                     break;
                 case 77: // Right
                     next_pos.x++;
-                    // 우측 경계를 넘어가면 맵 전환
-                    if (next_pos.x >= WIDTH-1) {
-                        if (pSharedData->players[player_id].current_map_id < 1) {
-                            new_map_id = pSharedData->players[player_id].current_map_id + 1;
-                            next_pos.x = 1; // 새 맵의 좌측 끝으로
-                            map_transition = true;
-                        } else {
-                            next_pos.x = WIDTH - 1; // 더 이상 갈 수 없음
-                        }
-                    }
+                    if (next_pos.x >= WIDTH - 1)
+                        map_transition = try_map_transition(Direction::RIGHT, new_map_id, next_pos);
                     break;
                 case ' ': // Spacebar - 광물 수집
                     for (int i = 0; i < MAX_MINERALS; ++i) {
                         if (!pSharedData->minerals[player_map_index][i].is_collected &&
                             pSharedData->minerals[player_map_index][i].map_id == pSharedData->players[player_id].current_map_id) {
-                            if ((abs(current_pos.x - pSharedData->minerals[player_map_index][i].pos.x) <= 1 && current_pos.y == pSharedData->minerals[player_map_index][i].pos.y) ||
-                                (abs(current_pos.y - pSharedData->minerals[player_map_index][i].pos.y) <= 1 && current_pos.x == pSharedData->minerals[player_map_index][i].pos.x)) {
+                            if (isNearMineral(current_pos,pSharedDate->minerals[player_map_index][i]) {//(abs(current_pos.x - pSharedData->minerals[player_map_index][i].pos.x) <= 1 && current_pos.y == pSharedData->minerals[player_map_index][i].pos.y) || (abs(current_pos.y - pSharedData->minerals[player_map_index][i].pos.y) <= 1 && current_pos.x == pSharedData->minerals[player_map_index][i].pos.x)
                                 pSharedData->minerals[player_map_index][i].is_collected = true;
+                                if (pSharedData->minerals[player_map_index][i].type == COAL) decreaseLife(pSharedData->players[player_id],player_id); //석탄먹으면 피 1 깎임
                                 pSharedData->minerals_collected++;
                             }
                         }
@@ -160,11 +178,10 @@ int main() {
             }
 
             if (map_transition) {
-                // 맵 전환 수행
                 pSharedData->players[player_id].current_map_id = new_map_id;
                 current_pos = next_pos;
             } else {
-                // 일반적인 이동 처리
+                // 기존 이동 처리
                 MapData& target_map = maps[get_map_index_by_id(pSharedData->players[player_id].current_map_id)];
                 
                 // 이동하려는 위치에 미수집 광물이 있는지 체크
